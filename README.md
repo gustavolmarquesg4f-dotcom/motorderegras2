@@ -1,4 +1,4 @@
-# Plano Justo v8 - Dossiê documental e repactuação
+# Plano Justo v10 - Dossiê documental e repactuação
 
 Frontend React, APIs Vercel, motor determinístico e autenticação Supabase com RLS. Este repositório contém **somente código e exemplos fictícios**. Arquivos de importação com dados pessoais, faturas e credenciais não pertencem ao repositório público.
 
@@ -26,3 +26,19 @@ Os valores publicados são apenas de demonstração. O backup privado v8 é forn
 - Menu lateral com rolagem interna, rodapé acessível e navegação móvel horizontal.
 - Fontes online podem falhar; links não lidos são marcados como não verificados e NÃO usados como prova.
 - A análise não é petição, garantia de homologação, perícia ou parecer jurídico.
+
+## v10 — Memória jurídica fundamentada (sem perfilamento de pessoas)
+- Cadastro privado de atos do processo com ID documental, página, data, ator e estado de conferência. A importação de um complemento JSON mescla referências sem destruir o caso existente.
+- Catálogo público de normas e orientações oficiais (CDC, BC, TJDFT), separado dos documentos privados. Link presente não significa que o servidor conseguiu ler o conteúdo.
+- Análise de IA usa trechos selecionados da memória privada, o histórico financeiro e fontes oficiais efetivamente lidas. A resposta estruturada apresenta IDs de atos e descarta referências inexistentes.
+- O juiz e advogados são descritos por atos, assinatura, representação documentada; não há suposições sobre psicologia ou predição de homologação.
+- Sete campos exigidos pela decisão são conferidos por contrato. O sistema não monitora PJe sozinho; intimações e atas devem ser acrescentadas.
+- O backup pessoal é entregue separadamente: NÃO incluir cadastro real, processo integral ou CPF no GitHub público.
+
+## v11 — Representantes, auditoria e análise aprofundada
+
+- Cadastro de **partes, procuradores e magistrado**, exclusivo da conta autenticada; origem documental, data, OAB e vinculação indicada. Não armazenar CPF de terceiros neste cadastro. **Uma captura do polo passivo não comprova procuração atualizada nem atuação processual**.
+- Importação de complemento JSON preserva os registros já existentes; o arquivo privado é entregue separadamente e **não integra este repositório ou o deploy**.
+- Uma ação do usuário executa a rotina de análise: triagem financeira e documental, leitura das fontes oficiais disponíveis, exame de representações e atos documentados, contraditório hipotético sem atribuição a pessoa real, revisão de citações e lista de providências. Os resumos são enviados ao AI Gateway **somente com consentimento explícito**.
+- Pesquisa PJe externa, juntadas, intimações, petições, notificações e mudanças de saldos **não são automáticas**. A IA não envia mensagens a terceiros nem edita dados sem confirmação. Não existem previsão de decisão, nota de qualidade do juiz/advogados, diagnóstico de personalidade ou consulta a estratégias internas bancárias.
+- O modelo indicado em `AI_GATEWAY_MODEL` pode ser selecionado pelo operador conforme disponibilidade e custo. Nenhum nome de modelo constitui garantia de desempenho jurídico. O sistema é apoio técnico a revisão profissional.

@@ -20,7 +20,7 @@ export function irrf2026(gross,inss,dependents=0){const deduction=Math.max(607.2
 export function normalizeCase(src={}){
   const s=structuredClone(src||{});
   const payroll=s.payroll||{},plan=s.plan||{},cons=s.consignado||{};
-  return {schema:7,knowledge:normalizeKnowledge(s.knowledge),evidence:normalizeEvidence(s.evidence),profile:{name:s.profile?.name||'',case:s.profile?.case||'',court:s.profile?.court||'TJDFT / CEJUSC-SUPER-PRE',family:v(s.profile?.family)||1},
+  return {schema:8,knowledge:normalizeKnowledge(s.knowledge),evidence:normalizeEvidence(s.evidence),profile:{name:s.profile?.name||'',case:s.profile?.case||'',court:s.profile?.court||'TJDFT / CEJUSC-SUPER-PRE',family:v(s.profile?.family)||1},
     payroll:{salaryGross:v(payroll.salaryGross),wfh:v(payroll.wfh),dependents:v(payroll.dependents),inssActual:v(payroll.inssActual),irrfActual:v(payroll.irrfActual??payroll.irrfClosing),irrfClosing:v(payroll.irrfClosing),union:v(payroll.union),other:v(payroll.other),advance:v(payroll.advance),closingPay:v(payroll.closingPay),actualCashAfterLoan:v(payroll.actualCashAfterLoan),foodBenefit:v(payroll.foodBenefit),foodUsed:v(payroll.foodUsed)},
     budget:Array.isArray(s.budget)?s.budget.map((x,i)=>({id:String(x.id||`e-${i}`),name:String(x.name||''),category:String(x.category||''),gross:v(x.gross),ticket:v(x.ticket),kind:String(x.kind||'essencial'),source:String(x.source||'')})):[],
     consignado:{total:v(cons.total),paid:v(cons.paid),remaining:v(cons.remaining),installment:v(cons.installment),snapshotDate:cons.snapshotDate||'',paidAfterSnapshot:Math.max(0,v(cons.paidAfterSnapshot)),confirmedStop:cons.confirmedStop===true,settlementReference:v(cons.settlementReference),source:cons.source||''},

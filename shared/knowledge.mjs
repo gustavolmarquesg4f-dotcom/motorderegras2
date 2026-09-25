@@ -1,4 +1,5 @@
 /** Case knowledge: source-indexed, owner-private facts; not a prediction or legal holding. */
+import {normalizeParticipants,mergeParticipants} from './actor-audit.mjs';
 const clean=(v,max=1100)=>String(v??'').replace(/[\u0000-\u001f]/g,' ').trim().slice(0,max);
 const isDate=(v)=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(String(v)))return false;const d=new Date(v+'T00:00:00Z');return !Number.isNaN(d.getTime())&&d.toISOString().slice(0,10)===v};
 export const KNOWLEDGE_TYPES=Object.freeze({court_order:'Decisão/despacho no processo',procedural_event:'Movimentação processual',party_statement:'Manifestação de parte ou advogado',bank_response:'Resposta formal de credor',financial_evidence:'Documento financeiro',court_precedent:'Jurisprudência pública',professional_note:'Nota do profissional',user_statement:'Declaração do titular'});
@@ -32,10 +33,10 @@ export function normalizeKnowledge(src={}){
   creditorId:clean(v.creditorId,65),summary:clean(v.summary,1350),sourceId:clean(v.sourceId,160),
   sourcePage:clean(v.sourcePage,35),sourceUrl:clean(v.sourceUrl,500),
   status:KNOWLEDGE_STATUSES[v.status]?v.status:'pending'}));
- const known=new Set();return {items:items.filter(x=>x.title&&x.summary&&x.sourceId&&(!known.has(x.id)&&known.add(x.id)))};
+ const known=new Set();return {items:items.filter(x=>x.title&&x.summary&&x.sourceId&&(!known.has(x.id)&&known.add(x.id))),participants:normalizeParticipants(src?.participants)};
 }
-export function mergeKnowledge(existing,incoming){const a=normalizeKnowledge(existing).items,b=normalizeKnowledge(incoming).items;const keys=new Set(a.map(x=>x.sourceId+'|'+x.date+'|'+x.title.toLowerCase()));return normalizeKnowledge({items:[...a,...b.filter(x=>!keys.has(x.sourceId+'|'+x.date+'|'+x.title.toLowerCase()))]});}
-export function knowledgeCoverage(input){const items=normalizeKnowledge(input).items;const orders=items.filter(x=>x.type==='court_order'&&x.status==='documented');const bank=items.filter(x=>x.type==='bank_response'&&x.status==='documented');return {total:items.length,orders:orders.length,bankResponses:bank.length,lastDocumented:items.filter(x=>x.date&&x.status==='documented').map(x=>x.date).sort().at(-1)||'',missingHearing:!items.some(x=>x.title.toLowerCase().includes('audiência marcada')&&x.status==='documented'),unverified:items.filter(x=>x.status!=='documented').length};}
+export function mergeKnowledge(existing,incoming){const a=normalizeKnowledge(existing).items,b=normalizeKnowledge(incoming).items;const keys=new Set(a.map(x=>x.sourceId+'|'+x.date+'|'+x.title.toLowerCase()));return normalizeKnowledge({items:[...a,...b.filter(x=>!keys.has(x.sourceId+'|'+x.date+'|'+x.title.toLowerCase()))],participants:mergeParticipants(existing?.participants,incoming?.participants)});}
+export function knowledgeCoverage(input){const items=normalizeKnowledge(input).items;const orders=items.filter(x=>x.type==='court_order'&&x.status==='documented');const bank=items.filter(x=>x.type==='bank_response'&&x.status==='documented');return {total:items.length,participants:normalizeParticipants(input?.participants).length,orders:orders.length,bankResponses:bank.length,lastDocumented:items.filter(x=>x.date&&x.status==='documented').map(x=>x.date).sort().at(-1)||'',missingHearing:!items.some(x=>x.title.toLowerCase().includes('audiência marcada')&&x.status==='documented'),unverified:items.filter(x=>x.status!=='documented').length};}
 export function contextForAI(input,{focus='global',question='',maxChars=22500}={}){
  const items=normalizeKnowledge(input).items;
  const score=x=>{const doc=x.status==='documented'?4:0,order=x.type==='court_order'?4:0,scope=x.creditorId===focus?8:0,questionTerms=String(question).toLowerCase().split(/\W+/).filter(x=>x.length>4);const hits=questionTerms.filter(t=>(x.title+' '+x.summary).toLowerCase().includes(t)).length;return doc+order+scope+Math.min(8,hits*2)};
