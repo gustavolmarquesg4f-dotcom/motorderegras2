@@ -42,3 +42,13 @@ Os valores publicados são apenas de demonstração. O backup privado v8 é forn
 - Uma ação do usuário executa a rotina de análise: triagem financeira e documental, leitura das fontes oficiais disponíveis, exame de representações e atos documentados, contraditório hipotético sem atribuição a pessoa real, revisão de citações e lista de providências. Os resumos são enviados ao AI Gateway **somente com consentimento explícito**.
 - Pesquisa PJe externa, juntadas, intimações, petições, notificações e mudanças de saldos **não são automáticas**. A IA não envia mensagens a terceiros nem edita dados sem confirmação. Não existem previsão de decisão, nota de qualidade do juiz/advogados, diagnóstico de personalidade ou consulta a estratégias internas bancárias.
 - O modelo indicado em `AI_GATEWAY_MODEL` pode ser selecionado pelo operador conforme disponibilidade e custo. Nenhum nome de modelo constitui garantia de desempenho jurídico. O sistema é apoio técnico a revisão profissional.
+
+## v12 — IA configurável e documentos profissionais
+
+- Corrige a dependência rígida do AI Gateway: o backend pode usar Ollama remoto autenticado (`gpt-oss:20b`), OpenAI API própria e, somente quando explicitamente habilitado, o Gateway da Vercel.
+- Ollama remoto precisa estar em endpoint HTTPS autenticado. O sistema bloqueia configuração insegura em produção e não presume que `localhost:11434` seja acessível a partir da Vercel.
+- O status da API diferencia credencial detectada de provedor realmente testado. Erros 401/403/429 retornam mensagens específicas.
+- Os PDFs foram reorganizados como proposta global, memória financeira, fundamentação por credor, checklist e fontes. Não imprimem a agenda de 60 meses como texto bruto.
+- O Excel profissional separa Resumo Executivo, Proposta por Credor, Orçamento, Itaú Consignado, Santander, Demais Credores, Cronograma, Checklist e Fontes, com fórmulas e formatação financeira.
+- A análise de IA gera PDF tabular com síntese, prioridades, revisão por especialidade, estratégia por credor, atos processuais, contrapontos, providências e fontes.
+- Não há fallback silencioso entre provedores salvo `AI_ALLOW_FALLBACK=true`, para evitar o envio inesperado de dados financeiros a outro fornecedor.
