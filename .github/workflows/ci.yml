@@ -1,0 +1,30 @@
+name: Plano Justo CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install
+        run: npm install --no-audit --no-fund
+      - name: Unit tests
+        run: npm test
+      - name: Build frontend
+        run: npm run build
+      - name: Verify API syntax
+        run: |
+          node --check api/chat.js
+          node --check api/config.js
+          node --check api/health.js
+      - name: Verify output
+        run: test -f dist/index.html
