@@ -46,6 +46,7 @@ jobs:
           set -euo pipefail
           BASE="https://motorderegras2.vercel.app"
           status=$(curl -sS --max-time 30 -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' --data '{"question":"olá","caseId":"00000000-0000-0000-0000-000000000000"}' "$BASE/api/chat")
+          echo "Anonymous response: HTTP $status"
           test "$status" = 401
           echo "Anonymous chat blocked: HTTP $status"
           node -e "const cfg=require('./config.json');fetch(cfg.url+'/rest/v1/cases?select=id',{headers:{apikey:cfg.publishableKey}}).then(r=>{if(r.status===200)throw Error('Anonymous finance table accessible');console.log('Anonymous finance read blocked: HTTP '+r.status)}).catch(e=>{console.error(e);process.exit(1)})"
