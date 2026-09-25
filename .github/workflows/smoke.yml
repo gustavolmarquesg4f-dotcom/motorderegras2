@@ -18,7 +18,7 @@ jobs:
           echo "Checking homepage..."
           curl --retry 2 --retry-delay 2 --max-time 30 -L -fsS "$BASE/" -o home.html
           grep -q 'Plano Justo' home.html
-          echo "Checking v13 UI assets..."
+          echo "Checking v14 UI assets..."
           js=$(grep -Eo 'src="/assets/[^"]+[.]js"' home.html | head -1 | cut -d'"' -f2)
           test -n "$js"
           curl --retry 2 --retry-delay 2 --max-time 30 -L -fsS "$BASE$js" -o frontend.js
@@ -30,15 +30,15 @@ jobs:
           grep -Fq 'Importar complemento do processo' frontend.js
           grep -Fq 'Representantes, bancos e atuação documentada' frontend.js
           grep -Fq 'Revisão por especialidade' frontend.js
-          grep -Fq 'Testar conexão' frontend.js
+          grep -Fq 'Testar conversa completa' frontend.js
           grep -Fq 'Proposta Global' frontend.js || true
           grep -Fq 'PDF completo e justificativas' frontend.js
-          echo "v13 importer and glossary found in JS bundle"
-          echo "Checking backend v13 (wait for production alias)..."
+          echo "v14 importer and glossary found in JS bundle"
+          echo "Checking backend v14 (wait for production alias)..."
           ok=0
           for i in $(seq 1 18); do
             curl --max-time 30 -L -fsS "$BASE/api/health" -o health.json || true
-            if node -e "const fs=require('fs');try{const x=JSON.parse(fs.readFileSync('health.json'));process.exit(x.name==='Plano Justo API'&&x.version==='13.0.0'&&x.configured?0:1)}catch{process.exit(1)}"; then ok=1; break; fi
+            if node -e "const fs=require('fs');try{const x=JSON.parse(fs.readFileSync('health.json'));process.exit(x.name==='Plano Justo API'&&x.version==='14.0.0'&&x.configured?0:1)}catch{process.exit(1)}"; then ok=1; break; fi
             sleep 5
           done
           test "$ok" = 1
