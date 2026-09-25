@@ -18,7 +18,7 @@ jobs:
           echo "Checking homepage..."
           curl --retry 2 --retry-delay 2 --max-time 30 -L -fsS "$BASE/" -o home.html
           grep -q 'Plano Justo' home.html
-          echo "Checking v8 UI assets..."
+          echo "Checking v10 UI assets..."
           js=$(grep -Eo 'src="/assets/[^"]+[.]js"' home.html | head -1 | cut -d'"' -f2)
           test -n "$js"
           curl --retry 2 --retry-delay 2 --max-time 30 -L -fsS "$BASE$js" -o frontend.js
@@ -26,10 +26,12 @@ jobs:
           grep -Fq 'Glossário' frontend.js
           grep -Fq 'Dossiê e documentos' frontend.js
           grep -Fq 'PDF completo e justificativas' frontend.js
-          echo "v8 importer and glossary found in JS bundle"
+          grep -Fq 'Memória jurídica do seu processo' frontend.js
+          grep -Fq 'Importar complemento do processo' frontend.js
+          echo "v10 importer and glossary found in JS bundle"
           echo "Checking backend..."
           curl --retry 2 --retry-delay 2 --max-time 30 -L -fsS "$BASE/api/health" -o health.json
-          node -e "const x=require('./health.json');if(x.name!=='Plano Justo API'||x.version!=='8.0.0'||!x.configured||!x.aiConfigured)throw Error('Database config missing'); console.log({version:x.version,configured:x.configured,aiConfigured:x.aiConfigured,aiProvider:x.aiProvider})"
+          node -e "const x=require('./health.json');if(x.name!=='Plano Justo API'||x.version!=='10.0.0'||!x.configured||!x.aiConfigured)throw Error('Database config missing'); console.log({version:x.version,configured:x.configured,aiConfigured:x.aiConfigured,aiProvider:x.aiProvider})"
           echo "Checking public frontend config..."
           curl --retry 2 --retry-delay 2 --max-time 30 -L -fsS "$BASE/api/config" -o config.json
           node -e "const x=require('./config.json');if(!x.configured||!x.url.startsWith('https://')||!x.publishableKey.startsWith('sb_publishable_'))throw Error('Missing safe Supabase public configuration'); console.log('Supabase public config found')"
