@@ -7,3 +7,7 @@ test('conditional substitution not reported as achieved',()=>{const d=evaluate(r
 test('suggestion requires whitelist and limit',()=>{assert.throws(()=>applySuggestion(raw,{path:'plan.months',value:61}));assert.throws(()=>applySuggestion(raw,{path:'payroll.salaryGross',value:0}));assert.equal(applySuggestion(raw,{path:'plan.monthly',value:1150}).plan.monthly,1150)});
 test('monthAdd',()=>assert.equal(monthAdd('2027-12',2),'2028-02'));
 test('IRRF calculation finite',()=>assert.ok(irrf2026(8000,900,2).tax>0));
+
+test('rateio usa cotação histórica do consignado, nunca o nominal como se fosse principal',()=>{const m=structuredClone(raw);m.consignado.settlementReference=14000;m.consignado.snapshotDate='2026-08-04';const r=evaluate(m);const loan=r.allocations.find(x=>x.id==='itau_cons');assert.equal(loan.base,14000);assert.ok(r.warnings.some(x=>x.code==='LOAN_QUOTE_STALE'));assert.notEqual(loan.base,16800)});
+
+test('rateio jamais ultrapassa parcela global por arredondamento de centavos',()=>{const m=structuredClone(raw);m.consignado.settlementReference=14000;m.debts.push({id:'extra',creditor:'Credor extra',base:4000,mode:'included',kind:'consumer'});const r=evaluate(m);assert.equal(r.allocations.reduce((a,x)=>a+Math.round(x.monthly*100),0),100000);assert.ok(r.totalPaid<=60000)});
