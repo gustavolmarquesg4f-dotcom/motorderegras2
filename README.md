@@ -52,3 +52,15 @@ Os valores publicados são apenas de demonstração. O backup privado v8 é forn
 - O Excel profissional separa Resumo Executivo, Proposta por Credor, Orçamento, Itaú Consignado, Santander, Demais Credores, Cronograma, Checklist e Fontes, com fórmulas e formatação financeira.
 - A análise de IA gera PDF tabular com síntese, prioridades, revisão por especialidade, estratégia por credor, atos processuais, contrapontos, providências e fontes.
 - Não há fallback silencioso entre provedores salvo `AI_ALLOW_FALLBACK=true`, para evitar o envio inesperado de dados financeiros a outro fornecedor.
+
+
+## v13 — Groq GPT-OSS, sem dependência do AI Gateway
+
+O frontend e backend permanecem autenticados pelo Supabase. Configurar **somente na Vercel / Settings / Environment Variables** do projeto `motorderegras2`, nos ambientes Production e Preview conforme necessário:
+
+- `GROQ_API_KEY`: chave secreta Groq. Não é legível pelo repositório ou browser. O segredo do EnglishOS não passa automaticamente para outro projeto.
+- `AI_PROVIDER=groq` para restringir toda análise financeira à Groq.
+- `GROQ_MODEL=openai/gpt-oss-120b`; fallback no mesmo fornecedor para `openai/gpt-oss-20b` quando o modelo não está disponível.
+- `GROQ_REASONING_EFFORT=high`; `AI_ALLOW_FALLBACK=false` por privacidade.
+
+Efetue um novo deployment após configurar as variáveis. Em **Assistente IA → Testar conexão**, o endpoint POST `/api/ai-probe` exige sessão válida e gera um JSON simples *sem dados financeiros*. `/api/health` indica apenas configuração, **não sucesso de inferência**. Retornos do modelo para chat/dossiê continuam condicionados ao caso do usuário autenticado e consentimento da análise. O aplicativo nunca copia uma chave do EnglishOS, e o teste não deve usar dados do caso. Se não houver chave, mostre a ausência de configuração, sem prometer IA ativa.
