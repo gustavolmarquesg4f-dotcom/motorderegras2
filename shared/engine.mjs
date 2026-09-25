@@ -1,4 +1,5 @@
 /** Plano Justo: deterministic rules. No AI writes to this engine. */
+import {normalizeEvidence} from './evidence-core.mjs';
 export const MAX_MONTHS = 60;
 export const FIRST_REQUESTED_MONTH = '2027-03';
 export const INSS_2026 = [[1621,.075],[2902.84,.09],[4354.27,.12],[8475.55,.14]];
@@ -18,7 +19,7 @@ export function irrf2026(gross,inss,dependents=0){const deduction=Math.max(607.2
 export function normalizeCase(src={}){
   const s=structuredClone(src||{});
   const payroll=s.payroll||{},plan=s.plan||{},cons=s.consignado||{};
-  return {schema:5,profile:{name:s.profile?.name||'',case:s.profile?.case||'',court:s.profile?.court||'TJDFT / CEJUSC-SUPER-PRE',family:v(s.profile?.family)||1},
+  return {schema:6,evidence:normalizeEvidence(s.evidence),profile:{name:s.profile?.name||'',case:s.profile?.case||'',court:s.profile?.court||'TJDFT / CEJUSC-SUPER-PRE',family:v(s.profile?.family)||1},
     payroll:{salaryGross:v(payroll.salaryGross),wfh:v(payroll.wfh),dependents:v(payroll.dependents),inssActual:v(payroll.inssActual),irrfActual:v(payroll.irrfActual??payroll.irrfClosing),irrfClosing:v(payroll.irrfClosing),union:v(payroll.union),other:v(payroll.other),advance:v(payroll.advance),closingPay:v(payroll.closingPay),actualCashAfterLoan:v(payroll.actualCashAfterLoan),foodBenefit:v(payroll.foodBenefit),foodUsed:v(payroll.foodUsed)},
     budget:Array.isArray(s.budget)?s.budget.map((x,i)=>({id:String(x.id||`e-${i}`),name:String(x.name||''),category:String(x.category||''),gross:v(x.gross),ticket:v(x.ticket),kind:String(x.kind||'essencial'),source:String(x.source||'')})):[],
     consignado:{total:v(cons.total),paid:v(cons.paid),remaining:v(cons.remaining),installment:v(cons.installment),snapshotDate:cons.snapshotDate||'',paidAfterSnapshot:Math.max(0,v(cons.paidAfterSnapshot)),confirmedStop:cons.confirmedStop===true,settlementReference:v(cons.settlementReference),source:cons.source||''},
