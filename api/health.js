@@ -1,0 +1,1 @@
+export default async function handler(req,res){res.setHeader('Cache-Control','no-store');res.status(200).json({name:'Plano Justo API',configured:!!(process.env.SUPABASE_URL&&process.env.SUPABASE_PUBLISHABLE_KEY),aiConfigured:!!(process.env.OPENAI_API_KEY&&process.env.OPENAI_MODEL),version:'5.0.0'});}

@@ -1,0 +1,9 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {evaluate,normalizeCase,amountForConsignado,irrf2026,applySuggestion,monthAdd} from '../shared/engine.mjs';
+const raw={payroll:{salaryGross:8000,actualCashAfterLoan:5000,foodBenefit:800,foodUsed:750},budget:[{id:'a',name:'Gastos',gross:6200,ticket:750}],consignado:{total:48,paid:20,remaining:28,installment:600},plan:{startMonth:'2027-03',monthly:1000,months:120,mode:'substitution'},debts:[{id:'s',creditor:'Santander',base:9000,mode:'included',kind:'consumer'}]};
+test('60 months hard cap and calendar',()=>{let d=evaluate(raw);assert.equal(d.case.plan.months,60);assert.equal(d.finish,'2032-02');assert.equal(d.schedule.length,120);assert.equal(d.schedule[0].month,'2027-03')});
+test('no double subtraction of food benefit',()=>{const d=evaluate(raw);assert.equal(d.finance.cashBudget,5450);assert.equal(d.finance.currentGap,-450)});
+test('nominal contractual flow never mistaken for settlement',()=>{const c=amountForConsignado({...raw.consignado,settlementReference:14000});assert.equal(c.nominal,16800);assert.equal(c.settlementReference,14000)});
+test('conditional substitution not reported as achieved',()=>{const d=evaluate(raw);assert.ok(d.warnings.some(x=>x.code==='LOAN_NOT_STOPPED'));assert.equal(d.finance.afterProposal,-850)});
+test('suggestion requires whitelist and limit',()=>{assert.throws(()=>applySuggestion(raw,{path:'plan.months',value:61}));assert.throws(()=>applySuggestion(raw,{path:'payroll.salaryGross',value:0}));assert.equal(applySuggestion(raw,{path:'plan.monthly',value:1150}).plan.monthly,1150)});
+test('monthAdd',()=>assert.equal(monthAdd('2027-12',2),'2028-02'));
+test('IRRF calculation finite',()=>assert.ok(irrf2026(8000,900,2).tax>0));
