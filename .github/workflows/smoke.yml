@@ -1,0 +1,26 @@
+name: Production smoke test
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Check homepage and health
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="https://motorderegras2.vercel.app"
+          echo "Checking homepage..."
+          curl --retry 2 --retry-delay 2 --max-time 30 -L -fsS "$BASE/" -o home.html
+          grep -q 'Plano Justo' home.html
+          echo "Checking backend..."
+          curl --retry 2 --retry-delay 2 --max-time 30 -L -fsS "$BASE/api/health" -o health.json
+          node -e "const x=require('./health.json');if(x.name!=='Plano Justo API'||!x.configured)throw Error('Database config missing'); console.log({version:x.version,configured:x.configured,aiConfigured:x.aiConfigured,aiProvider:x.aiProvider})"
+          echo "Checking public frontend config..."
+          curl --retry 2 --retry-delay 2 --max-time 30 -L -fsS "$BASE/api/config" -o config.json
+          node -e "const x=require('./config.json');if(!x.configured||!x.url.startsWith('https://')||!x.publishableKey.startsWith('sb_publishable_'))throw Error('Missing safe Supabase public configuration'); console.log('Supabase public config found')"
