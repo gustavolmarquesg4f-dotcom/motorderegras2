@@ -21,7 +21,7 @@ export default async function handler(req,res){res.setHeader('Cache-Control','no
  const url=process.env.SUPABASE_URL||PUBLIC_SUPABASE_URL,key=process.env.SUPABASE_PUBLISHABLE_KEY||PUBLIC_SUPABASE_PUBLISHABLE_KEY;
  const aiProviders=configuredProviders(process.env,req.headers);
  if(!url||!key)return reply(res,503,'Banco não configurado.');
- if(!aiProviders.length)return reply(res,503,'Nenhum modelo conectado: configure Ollama HTTPS autenticado ou OpenAI API.');
+ if(!aiProviders.length)return reply(res,503,'Nenhum modelo ativo: configure XAI_API_KEY (Grok), Ollama HTTPS autenticado ou OPENAI_API_KEY.');
  const client=createClient(url,key,{global:{headers:{Authorization:`Bearer ${jwt}`}},auth:{persistSession:false,autoRefreshToken:false}});
  const auth=await client.auth.getUser(jwt);if(auth.error||!auth.data.user)return reply(res,401,'Sessão inválida.');
  const {data:record,error}=await client.from('cases').select('id,payload,version').eq('id',caseId).eq('owner_id',auth.data.user.id).single();if(error||!record)return reply(res,404,'Caso não encontrado na conta autenticada.');

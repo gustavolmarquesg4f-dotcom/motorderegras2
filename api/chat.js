@@ -11,11 +11,11 @@ function fail(res,code,message){return res.status(code).json({error:message})}
 export default async function handler(req,res){
   res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');
   if(req.method!=='POST')return fail(res,405,'Método não permitido.');
+  const jwt=(req.headers.authorization||'').match(/^Bearer (.+)$/)?.[1];if(!jwt)return fail(res,401,'Sessão necessária.');
   const url=process.env.SUPABASE_URL||PUBLIC_SUPABASE_URL,key=process.env.SUPABASE_PUBLISHABLE_KEY||PUBLIC_SUPABASE_PUBLISHABLE_KEY;
   const providers=configuredProviders(process.env,req.headers);
   if(!url||!key)return fail(res,503,'Banco ainda não configurado.');
-  if(!providers.length)return fail(res,503,'Nenhum modelo conectado. Configure XAI_API_KEY, Ollama HTTPS autenticado ou OpenAI API. A conta gratuita do Grok não fornece acesso automático à API.');
-  const jwt=(req.headers.authorization||'').match(/^Bearer (.+)$/)?.[1];if(!jwt)return fail(res,401,'Sessão necessária.');
+  if(!providers.length)return fail(res,503,'Nenhum modelo ativo: configure XAI_API_KEY (Grok), Ollama HTTPS autenticado ou OPENAI_API_KEY. O Gateway automático da Vercel não garante créditos.');
   const db=createClient(url,key,{global:{headers:{Authorization:`Bearer ${jwt}`}},auth:{persistSession:false,autoRefreshToken:false}});
   const {data:{user},error:authError}=await db.auth.getUser(jwt);if(authError||!user)return fail(res,401,'Sessão inválida.');
   const question=String(req.body?.question||'').trim(),caseId=String(req.body?.caseId||'');if(!question||question.length>2400||!/^[-0-9a-f]{36}$/i.test(caseId))return fail(res,400,'Mensagem ou caso inválido.');
