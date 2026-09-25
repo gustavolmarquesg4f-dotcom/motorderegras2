@@ -43,7 +43,7 @@ jobs:
           done
           test "$ok" = 1
           cat health.json
-          node -e "const x=require('./health.json');console.log({version:x.version,configured:x.configured,aiConfigured:x.aiConfigured,aiProvider:x.aiProvider,aiVerified:x.aiVerified})"
+          node -e "const x=require('./health.json');console.log({version:x.version,configured:x.configured,aiConfigured:x.aiConfigured,aiProvider:x.aiProvider,aiModel:x.aiModel,aiVerified:x.aiVerified});if(x.aiProvider!=='groq'||!x.aiConfigured)throw Error('Groq nao esta configurada no deployment de producao')"
           echo "Checking public frontend config..."
           curl --retry 2 --retry-delay 2 --max-time 30 -L -fsS "$BASE/api/config" -o config.json
           node -e "const x=require('./config.json');if(!x.configured||!x.url.startsWith('https://')||!x.publishableKey.startsWith('sb_publishable_'))throw Error('Missing safe Supabase public configuration'); console.log('Supabase public config found')"
