@@ -13,7 +13,7 @@ Frontend React/Vite (`web/`), backend serverless isolado (`api/`), motor determi
 
 ## Implantação atual
 - Banco dedicado: Supabase em São Paulo, migração e RLS habilitadas. URL e chave **publicável** estão em `shared/public-config.mjs`; não são segredo. A chave `service_role` nunca foi usada.
-- IA: por padrão usa o Vercel AI Gateway com `VERCEL_OIDC_TOKEN` provido pela plataforma, se créditos e permissões permitirem; alternativa `OPENAI_API_KEY` só no servidor. Nenhuma credencial privada deve ser comitada.
+- IA: por padrão usa o Vercel AI Gateway com OIDC fornecido pela plataforma no cabeçalho `x-vercel-oidc-token` das funções (ou `VERCEL_OIDC_TOKEN` em build/local), se créditos e permissões permitirem; alternativa `OPENAI_API_KEY` só no servidor. Nenhuma credencial privada deve ser comitada.
 - Os dados privados são adicionados pelo próprio usuário **depois de entrar**, usando Importar JSON. Não colocar o arquivo pessoal no GitHub.
 - Configure, no painel Supabase Auth, Site URL e Redirect URLs para o domínio efetivo da aplicação. A confirmação de e-mail depende do provedor de e-mail da sua conta Supabase.
 - Verifique o build, endpoint `/api/health`, cadastro/login, políticas RLS com duas contas e ao menos uma mensagem real antes de tratar como produção operacional.

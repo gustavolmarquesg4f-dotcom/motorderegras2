@@ -8,7 +8,7 @@ export default async function handler(req,res){
   res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');
   if(req.method!=='POST')return fail(res,405,'Método não permitido.');
   const url=process.env.SUPABASE_URL||PUBLIC_SUPABASE_URL,key=process.env.SUPABASE_PUBLISHABLE_KEY||PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-  const directKey=process.env.OPENAI_API_KEY, gatewayKey=process.env.AI_GATEWAY_API_KEY||process.env.VERCEL_OIDC_TOKEN;
+  const directKey=process.env.OPENAI_API_KEY, gatewayKey=process.env.AI_GATEWAY_API_KEY||req.headers['x-vercel-oidc-token']||process.env.VERCEL_OIDC_TOKEN;
   if(!url||!key)return fail(res,503,'Banco ainda não configurado.');
   if(!directKey&&!gatewayKey)return fail(res,503,'IA indisponível: credencial do AI Gateway não fornecida pelo ambiente Vercel.');
   const jwt=(req.headers.authorization||'').match(/^Bearer (.+)$/)?.[1];if(!jwt)return fail(res,401,'Sessão necessária.');
