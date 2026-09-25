@@ -1,0 +1,42 @@
+import React,{useEffect,useMemo,useState} from 'react';
+import {readWorkbook} from './readWorkbook.js';
+import {TYPES,FIELD_LABELS,columnsFor,detectHeaderRow,inferSheet,suggestMapping,previewImport,applyImportCase} from '../../shared/importer.mjs';
+import {brl} from '../../shared/engine.mjs';
+import {Help} from './Help.jsx';
+const describe=(type,d)=>type==='budget'?`${d.name} · ${d.category}`:type==='debts'?d.creditor:`${d.label} → ${d.field}`;
+const money=(type,d)=>type==='budget'?`${brl(d.gross)} bruto · ${brl(d.ticket)} benefício · ${brl(d.gross-d.ticket)} dinheiro`:type==='debts'?`${brl(d.claim)} cobrado · ${brl(d.base)} base`:brl(d.value);
+export default function ImportWizard({model,onApply}){
+ const [workbook,setWorkbook]=useState(null),[sheetIndex,setSheetIndex]=useState(0),[type,setType]=useState('budget'),[headerRow,setHeaderRow]=useState(0),[mapping,setMapping]=useState({}),[selected,setSelected]=useState([]),[replace,setReplace]=useState(false),[reading,setReading]=useState(false),[error,setError]=useState(''),[result,setResult]=useState(null);
+ const sheet=workbook?.sheets[sheetIndex];
+ const preview=useMemo(()=>sheet?previewImport(sheet,{type,headerRow,mapping,fileName:workbook.name}):null,[sheet,type,headerRow,mapping,workbook?.name]);
+ useEffect(()=>{setSelected(preview?.entries.map(e=>e.id)||[])},[preview]);
+ const cols=useMemo(()=>sheet?columnsFor(sheet,headerRow):[],[sheet,headerRow]);
+ const setSheet=(index,book=workbook)=>{const next=book.sheets[index],kind=inferSheet(next),header=detectHeaderRow(next);setSheetIndex(index);setType(kind);setHeaderRow(header);setMapping(suggestMapping(next,kind,header));setReplace(false);setError('');setResult(null)};
+ async function load(e){const file=e.target.files?.[0];e.target.value='';if(!file)return;setReading(true);setError('');setResult(null);try{const book=await readWorkbook(file);setWorkbook(book);setSheet(0,book);}catch(err){setWorkbook(null);setError(err.message);}finally{setReading(false)}}
+ function changeType(kind){setType(kind);setMapping(suggestMapping(sheet,kind,headerRow));setReplace(false);setResult(null)}
+ function changeHeader(index){setHeaderRow(index);setMapping(suggestMapping(sheet,type,index));setResult(null)}
+ function apply(){try{const answer=applyImportCase(model,preview,selected,{replace:type==='payroll'?false:replace});if(!window.confirm(`Confirmar ${answer.count} linha(s) de ${workbook.name} (${sheet.name})?\n\n${answer.changes.added} nova(s) · ${answer.changes.updated} atualizada(s) · ${answer.changes.unchanged} sem mudança.\n\n${replace&&type!=='payroll'?'ATENÇÃO: os registros atuais desta seção serão substituídos.\n\n':''}Os dados serão aplicados apenas à tela; depois, confira e clique em SALVAR para persistir no banco.`))return;onApply(answer,preview);setResult(answer.changes);setError('');}catch(err){setError(err.message)}}
+ return <><section className="panel import-hero"><div className="section-head"><div><h3>Importar planilha financeira <Help term="Origem da planilha"/></h3><p>Leia seu orçamento, seus credores ou a folha de pagamento e confira as colunas antes de aplicar.</p></div></div>
+  <label className="upload-area"> <span className="upload-icon">⇧</span><b>{reading?'Lendo a planilha…':'Escolher arquivo XLSX, XLS ou CSV'}</b><small>Até 10 MB · leitura local · nenhuma linha é salva automaticamente</small><input type="file" accept=".xlsx,.xls,.csv" onChange={load} disabled={reading}/></label>
+  <div className="alert blue">O arquivo original é processado no seu navegador. Só os registros que você aprovar entram no caso quando clicar em <b>Salvar alterações</b>. Fórmulas são lidas pelo último valor armazenado; revise células sem resultado.</div>
+ </section>
+ {error&&<div role="alert" className="alert red">{error}</div>}
+ {workbook&&<><section className="panel"><div className="section-head"><div><h3>1. Escolha a aba e identifique as colunas</h3><p>Planilhas com várias competências: escolha somente o mês que representa o orçamento que você deseja importar.</p></div><span className="import-pill">{workbook.sheets.length} aba(s)</span></div>
+  <div className="formgrid"><label className="import-label">Aba<select value={sheetIndex} onChange={e=>setSheet(Number(e.target.value))}>{workbook.sheets.map((s,i)=><option key={i} value={i}>{s.name}</option>)}</select></label>
+  <label className="import-label">Tipo de informação<select value={type} onChange={e=>changeType(e.target.value)}>{Object.entries(TYPES).map(([key,value])=><option key={key} value={key}>{value}</option>)}</select></label>
+  <label className="import-label">Linha dos títulos<select value={headerRow} onChange={e=>changeHeader(Number(e.target.value))}>{Array.from({length:Math.min(20,sheet.rows.length)},(_,i)=><option value={i} key={i}>Linha {i+1}: {(sheet.rows[i]||[]).slice(0,3).join(' · ').slice(0,80)}</option>)}</select></label></div>
+  <div className="mapping-grid">{Object.entries(FIELD_LABELS[type]).map(([field,label])=><label key={field} className="import-label">{label}<select value={mapping[field]??-1} onChange={e=>{setMapping(m=>({...m,[field]:Number(e.target.value)}));setResult(null)}}><option value={-1}>Não usar esta coluna</option>{cols.map(c=><option value={c.index} key={c.index}>{c.label}</option>)}</select></label>)}</div>
+  {type==='budget'&&<p className="footnote">Informe o valor bruto e, quando existir, a parte paga pelo benefício. Se sua planilha tiver apenas gasto em dinheiro, mapeie “Saída de dinheiro”. Não somamos o benefício duas vezes. <Help term="Benefício alimentação"/></p>}
+  {type==='debts'&&<p className="footnote">Saldo cobrado e base da proposta podem ser diferentes. Um dado importado nunca vira comprovação bancária por si só. <Help term="Verificado"/></p>}
+ </section>
+ <section className="panel"><div className="section-head"><div><h3>2. Revise a prévia dos dados</h3><p>Totais, linhas vazias e duplicatas são descartados. Você pode desmarcar as linhas que não deseja usar.</p></div></div>
+ <div className="import-stats"><span><b>{preview.entries.length}</b> válidas</span><span><b>{preview.invalid}</b> inválidas</span><span><b>{preview.duplicates}</b> repetidas</span><span><b>{preview.skipped}</b> ignoradas</span></div>
+ {preview.warnings.map((w,i)=><div key={i} className="alert amber">{w}</div>)}
+ <div className="import-select-all"><label><input type="checkbox" checked={preview.entries.length>0&&selected.length===preview.entries.length} onChange={e=>setSelected(e.target.checked?preview.entries.map(x=>x.id):[])} /> Selecionar todas as linhas válidas ({selected.length}/{preview.entries.length})</label><small>Exibindo até 100 linhas por prévia</small></div>
+ <div className="table-wrap import-preview"><table><thead><tr><th>Usar</th><th>Linha</th><th>Identificação</th><th>Valor interpretado</th><th>Origem</th></tr></thead><tbody>{preview.entries.slice(0,100).map(entry=><tr key={entry.id}><td><input type="checkbox" checked={selected.includes(entry.id)} onChange={e=>setSelected(list=>e.target.checked?[...list,entry.id]:list.filter(x=>x!==entry.id))}/></td><td>{entry.rowNumber}</td><td>{describe(type,entry.data)}</td><td>{money(type,entry.data)}</td><td>{entry.data.source}</td></tr>)}</tbody></table></div>
+ {preview.entries.length>100&&<div className="alert blue">A prévia lista 100 linhas; ao aplicar, todas as {selected.length} linhas marcadas serão consideradas.</div>}
+ <div className="import-actions">{type!=='payroll'&&<label className="check"><input type="checkbox" checked={replace} onChange={e=>setReplace(e.target.checked)}/> Substituir toda a seção de {TYPES[type].toLowerCase()}, em vez de mesclar</label>}<button className="primary" disabled={!selected.length} onClick={apply}>Conferir e aplicar {selected.length} linha(s)</button></div>
+ {result&&<div className="alert green" role="status"><b>Aplicação aprovada na tela.</b> {result.added} nova(s), {result.updated} atualizada(s), {result.unchanged} sem mudança. Revise os cálculos e use <b>Salvar alterações</b> no topo.</div>}
+ </section></>}
+ </>;
+}

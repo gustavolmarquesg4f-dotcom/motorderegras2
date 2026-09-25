@@ -33,3 +33,12 @@ Configure as variáveis de `.env.example` na Vercel; `/api` necessita de runtime
 
 ## Diretriz jurídica
 Lei 14.181/2021/CDC arts. 54-A e 104-A/104-B. Março/2027 é um **pedido** sujeito à homologação; até 180 dias após homologação aplica-se à primeira parcela no plano judicial compulsório. Não equiparar saldo residual simulado a desconto obrigatoriamente concedido.
+
+## Novidades v7 — planilha + explicações contextuais
+- Aba **Importar planilha**: lê `.xlsx`, `.xls`, `.csv` no navegador (máx. 10 MB, 24 abas, 45 colunas e até 2.000 linhas úteis). Arquivo completo não é enviado ao backend nem armazenado.
+- Seleção de aba, classificação (orçamento, credores ou renda), escolha de cabeçalho, mapeamento automático ajustável, prévia e seleção de linhas. Apenas após confirmação os números passam para a tela; salvar no banco é uma ação separada.
+- Importação com mesclagem por despesa/categoria ou credor, evitando somas repetidas. Opção explícita para substituir a seção; rendimentos reconhecidos por rubrica. Planilhas mensais devem ser importadas uma competência de cada vez.
+- Valores inválidos, subtotais, duplicatas e estimativas indevidas são sinalizados/ignorados. Dívida nova começa pendente, e alterar valores retira a marcação de saldo conferido. Valor do consignado não é substituído por planilha sem verificação documental.
+- Cada despesa importada registra arquivo, aba e linha; origem é exibida na tabela e incluída na exportação Excel. O arquivo original não fica salvo.
+- Ícones **?** acessíveis por mouse, teclado e toque nos conceitos importantes; aba de glossário pesquisável; painel de qualidade alerta sobre fontes, duplicidade, benefício e dados desatualizados.
+- A dependência SheetJS foi atualizada para pacote oficial com correções de leitura (0.20.3), evitando o npm legado 0.18.5; processamento com fórmulas/macros desabilitadas. Verifique o resultado de fórmulas armazenado pela própria planilha.
