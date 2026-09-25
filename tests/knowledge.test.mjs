@@ -1,0 +1,10 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {normalizeKnowledge,mergeKnowledge,knowledgeCoverage,contextForAI,citationCheck,LEGAL_LIBRARY,REQUIRED_CREDITOR_FIELDS} from '../shared/knowledge.mjs';
+import {normalizeCase} from '../shared/engine.mjs';
+const example={items:[{id:'doc-1',date:'2026-09-08',type:'court_order',title:'Decisão',actor:'Magistrado documentado',summary:'Apresentar documentos antes da audiência',sourceId:'PJe doc 1',sourcePage:'5',status:'documented'},{id:'memo-1',type:'bank_response',title:'Banco hipotético',summary:'Proposta recebida',sourceId:'Fatura 7',status:'declared'}]};
+test('case normalization persists private sourced knowledge',()=>assert.equal(normalizeCase({knowledge:example}).knowledge.items.length,2));
+test('knowledge merge idempotent and never overwrites user entries',()=>{const a=mergeKnowledge(example,example);assert.equal(a.items.length,2);assert.equal(a.items[0].sourceId,'PJe doc 1')});
+test('source reference is mandatory and date is validated',()=>{const r=normalizeKnowledge({items:[{title:'bad',summary:'text'},{title:'a',summary:'valid',sourceId:'D',date:'2026-99-99'}]});assert.equal(r.items.length,1);assert.equal(r.items[0].date,'')});
+test('coverage tracks orders, pending hearing, and unverified records',()=>{const x=knowledgeCoverage(example);assert.equal(x.orders,1);assert.equal(x.bankResponses,0);assert.equal(x.missingHearing,true);assert.equal(x.unverified,1)});
+test('AI context includes citations and excludes unlisted citation IDs',()=>{const arr=contextForAI(example,{question:'documentos audiência'});assert.equal(arr[0].sourceId,'PJe doc 1');assert.deepEqual(citationCheck(['doc-1','fake'],arr.map(x=>x.id)),['doc-1'])});
+test('law library uses official https origins and seven decision fields exist',()=>{assert.equal(REQUIRED_CREDITOR_FIELDS.length,7);assert.ok(LEGAL_LIBRARY.every(x=>new URL(x.url).protocol==='https:'))});

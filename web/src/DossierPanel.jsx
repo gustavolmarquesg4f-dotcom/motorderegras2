@@ -3,10 +3,12 @@ import {brl,evaluate,normalizeCase} from '../../shared/engine.mjs';
 import {LEDGER_TYPES,normalizeEvidence,creditorDossier,EVIDENCE_SOURCES} from '../../shared/evidence.mjs';
 import {downloadGeneralPdf,downloadCreditorPdf,downloadRequestsPdf,downloadWorkbook} from './reports.js';
 import {Help} from './Help.jsx';
+import CaseKnowledgePanel from './CaseKnowledgePanel.jsx';
+import DossierIntelligence from './DossierIntelligence.jsx';
 const NUMERIC={originalFinanced:'Total financiado',cashReleased:'Crédito líquido recebido em conta',priorSettled:'Contratos anteriores refinanciados',financedTax:'IOF financiado',nominalOriginal:'Soma nominal original',rateMonthly:'Taxa mensal (%)',cetMonthly:'CET mensal (%)',paidPrincipal:'Principal já amortizado',paidInterest:'Juros já pagos',paidOther:'Outros encargos pagos',paidTotal:'Total de pagamentos registrados',firstInterest:'Juros na primeira parcela',settlementAmount:'Cotação de quitação na data-base',negotiationReference:'Referência de proposta, ainda não principal'};
 const STATUSES={bank_document:'Fatura/DDC bancário conferido',memorial:'Transcrito do memorial - verificar original',declaration:'Declaração/estimativa',unreconciled:'Pendente de conciliação'};
 const field=(value,onChange,type='text',props={})=><input type={type} value={value??''} onChange={e=>onChange(type==='number'?(e.target.value===''?null:Number(e.target.value)):e.target.value)} min={type==='number'?0:undefined} step={type==='number'?'0.01':undefined} {...props}/>;
-export default function DossierPanel({model,onChange,onError}){
+export default function DossierPanel({model,onChange,onKnowledgeChange,onError,record,session,db,dirty,demoMode}){
  const [selected,setSelected]=useState('itau_cons'),[exporting,setExporting]=useState(false),[note,setNote]=useState('');
  const r=useMemo(()=>evaluate(model),[model]),e=normalizeEvidence(model.evidence),d=creditorDossier(model,r,selected);
  const banks=[{id:'itau_cons',creditor:'Itaú - consignado'},...model.debts.map(x=>({id:x.id,creditor:x.creditor}))];
@@ -25,6 +27,8 @@ export default function DossierPanel({model,onChange,onError}){
    {note&&<div role="status" className="alert green">{note}</div>}
    <div className="alert amber">O PDF traz uma fundamentação factual e pedidos a verificar, mas não afirma que a diferença entre parcelas nominais e saldo de quitação seja dívida indevida. Juros pagos não são descontados novamente sem base contratual ou decisão.</div>
   </section>
+  <CaseKnowledgePanel model={model} onChange={onKnowledgeChange}/>
+  <DossierIntelligence model={model} record={record} session={session} db={db} dirty={dirty} demoMode={demoMode}/>
   <section className="panel"><div className="section-head"><div><h3>1. Escolha o credor e revise sua justificativa <Help term="Base referencial"/></h3><p>Use a justificativa por instituição e confira os valores antes de exportar.</p></div></div>
     <label className="dossier-choice">Credor<select value={selected} onChange={ev=>setSelected(ev.target.value)}>{banks.map(x=><option key={x.id} value={x.id}>{x.creditor}</option>)}</select></label>
     <div className="dossier-facts">{d.lines.map((x,i)=><div key={i} className="dossier-item"><b>{x.title}</b><p>{x.text}</p></div>)}</div>
