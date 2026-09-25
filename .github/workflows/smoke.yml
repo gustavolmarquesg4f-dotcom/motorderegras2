@@ -20,7 +20,17 @@ jobs:
           grep -q 'Plano Justo' home.html
           echo "Checking backend..."
           curl --retry 2 --retry-delay 2 --max-time 30 -L -fsS "$BASE/api/health" -o health.json
-          node -e "const x=require('./health.json');if(x.name!=='Plano Justo API'||!x.configured)throw Error('Database config missing'); console.log({version:x.version,configured:x.configured,aiConfigured:x.aiConfigured,aiProvider:x.aiProvider})"
+          node -e "const x=require('./health.json');if(x.name!=='Plano Justo API'||!x.configured||!x.aiConfigured)throw Error('Database config missing'); console.log({version:x.version,configured:x.configured,aiConfigured:x.aiConfigured,aiProvider:x.aiProvider})"
           echo "Checking public frontend config..."
           curl --retry 2 --retry-delay 2 --max-time 30 -L -fsS "$BASE/api/config" -o config.json
           node -e "const x=require('./config.json');if(!x.configured||!x.url.startsWith('https://')||!x.publishableKey.startsWith('sb_publishable_'))throw Error('Missing safe Supabase public configuration'); console.log('Supabase public config found')"
+
+      - name: Reject anonymous chat and database requests
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="https://motorderegras2.vercel.app"
+          status=$(curl -sS --max-time 30 -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' --data '{"question":"olá","caseId":"00000000-0000-0000-0000-000000000000"}' "$BASE/api/chat")
+          test "$status" = 401
+          echo "Anonymous chat blocked: HTTP $status"
+          node -e "const cfg=require('./config.json');fetch(cfg.url+'/rest/v1/cases?select=id',{headers:{apikey:cfg.publishableKey}}).then(r=>{if(r.status===200)throw Error('Anonymous finance table accessible');console.log('Anonymous finance read blocked: HTTP '+r.status)}).catch(e=>{console.error(e);process.exit(1)})"
