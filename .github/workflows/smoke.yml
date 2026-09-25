@@ -19,7 +19,7 @@ jobs:
           curl --retry 2 --retry-delay 2 --max-time 30 -L -fsS "$BASE/" -o home.html
           grep -q 'Plano Justo' home.html
           echo "Checking v7 UI assets..."
-          js=$(grep -Eo 'src="/assets/[^\"]+\\.js"' home.html | head -1 | cut -d\" -f2)
+          js=$(grep -Eo 'src="/assets/[^"]+[.]js"' home.html | head -1 | cut -d'"' -f2)
           test -n "$js"
           curl --retry 2 --retry-delay 2 --max-time 30 -L -fsS "$BASE$js" -o frontend.js
           grep -Fq 'Importar planilha' frontend.js
