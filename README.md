@@ -64,3 +64,11 @@ O frontend e backend permanecem autenticados pelo Supabase. Configurar **somente
 - `GROQ_REASONING_EFFORT=high`; `AI_ALLOW_FALLBACK=false` por privacidade.
 
 Efetue um novo deployment após configurar as variáveis. Em **Assistente IA → Testar conexão**, o endpoint POST `/api/ai-probe` exige sessão válida e gera um JSON simples *sem dados financeiros*. `/api/health` indica apenas configuração, **não sucesso de inferência**. Retornos do modelo para chat/dossiê continuam condicionados ao caso do usuário autenticado e consentimento da análise. O aplicativo nunca copia uma chave do EnglishOS, e o teste não deve usar dados do caso. Se não houver chave, mostre a ausência de configuração, sem prometer IA ativa.
+
+
+## v14 — Diagnóstico de conversação Groq sem exposição de dados
+- `/api/ai-probe` autenticado executa primeiro JSON mínimo e depois o mesmo contrato JSON da conversa com um caso *inteiramente fictício*. O primeiro teste sozinho não aprova mais a integração.
+- 403 preserva `error.code` e `error.type` sanitizados e o modelo tentado, nunca o corpo original da resposta nem dados do processo.
+- Fallback 120b→20b somente para código explícito de bloqueio/inexistência de modelo (403 genérico não troca modelo nem mascara a causa).
+- Histórico e dossiês do chat são resumidos com números essenciais primeiro e atos processuais selecionados; não altera valores salvos.
+- O resultado da análise autenticada deve ser conferido no próprio app; CI não conhece credenciais de usuários.

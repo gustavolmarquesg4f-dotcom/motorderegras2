@@ -2,8 +2,8 @@
 import {DEFAULT_GATEWAY_MODEL} from './public-config.mjs';
 
 export class AIServiceError extends Error {
-  constructor(message,{status=503,provider='unavailable',upstreamStatus=null}={}){
-    super(message);this.name='AIServiceError';this.status=status;this.provider=provider;this.upstreamStatus=upstreamStatus;
+  constructor(message,{status=503,provider='unavailable',upstreamStatus=null,upstreamCode=null,upstreamType=null,model=null}={}){
+    super(message);this.name='AIServiceError';this.status=status;this.provider=provider;this.upstreamStatus=upstreamStatus;this.upstreamCode=upstreamCode;this.upstreamType=upstreamType;this.model=model;
   }
 }
 const err=(message,provider,upstreamStatus)=>new AIServiceError(message,{provider,upstreamStatus});
@@ -38,8 +38,19 @@ async function jsonResponse(url,opts,provider,timeoutMs=48000){
   catch(e){throw err(e?.name==='TimeoutError'?'O modelo excedeu o tempo de resposta.':'Não foi possível alcançar o provedor configurado.',provider)}
   let body;try{body=await response.json()}catch{throw err('Resposta inválida do provedor de IA.',provider,response.status)}
   if(!response.ok){
-    const message=response.status===403&&provider==='gateway'?'Gateway Vercel recusou acesso (403): créditos ou permissões. Configure outro provedor de IA no servidor.':response.status===403&&provider==='groq'?'A Groq recusou o modelo (403). Verifique a permissão de acesso.':response.status===401?'Credencial do provedor inválida.':response.status===429?'Limite ou crédito de uso do provedor atingido.':`Provedor ${provider} indisponível (HTTP ${response.status}).`;
-    throw err(message,provider,response.status);
+    // A resposta upstream pode conter dados do prompt: NUNCA devolva error.message ou body ao cliente.
+    // Apenas código/tipo limitados a identificadores ASCII sem informações do titular.
+    const identifier=value=>/^[a-z][a-z0-9_]{0,71}$/.test(String(value||''))?String(value):null;
+    const upstreamCode=identifier(body?.error?.code),upstreamType=identifier(body?.error?.type);
+    const blockedModel=['model_permission_blocked_org','model_permission_blocked_project'].includes(upstreamCode);
+    const message=response.status===403&&provider==='groq'
+      ? blockedModel?`A Groq informou uma restrição do modelo (${upstreamCode}). Verifique as permissões do projeto/organização na Groq.`
+       :`A Groq recusou esta requisição (403), apesar de o teste simples poder funcionar. O código de diagnóstico será exibido sem revelar dados do caso.`
+      :response.status===403&&provider==='gateway'?'Gateway Vercel recusou acesso (403): créditos ou permissões.'
+       :response.status===401?'Credencial do provedor inválida.'
+       :response.status===429?'Limite de uso do provedor atingido. Verifique os limites e tente mais tarde.'
+       :`Provedor ${provider} indisponível (HTTP ${response.status}).`;
+    throw new AIServiceError(message,{provider,upstreamStatus:response.status,upstreamCode,upstreamType,status:response.status===429?429:502});
   }
   return body;
 }
@@ -72,8 +83,13 @@ async function completeGroq({content,schema,env}){
       if(!raw)throw err('A Groq não retornou conteúdo estruturado.','groq');
       return {raw,model};
     }catch(e){
-      // 400/403/404 podem ser limitação específica do modelo; 401/429 não.
-      if(i<models.length-1 && e instanceof AIServiceError && [400,403,404].includes(e.upstreamStatus))continue;
+      if(e instanceof AIServiceError)e.model=model;
+      // Não mascare um 403 de conteúdo/política/conta tentando o 20b: teste simples do 120b pode funcionar.
+      // Fallback somente para erro EXPLICITAMENTE restrito a modelo ou modelo inexistente.
+      const modelBlock=e instanceof AIServiceError&&[
+        'model_permission_blocked_org','model_permission_blocked_project','model_not_found'
+      ].includes(e.upstreamCode);
+      if(i<models.length-1 && (modelBlock||e instanceof AIServiceError&&e.upstreamStatus===404))continue;
       throw e;
     }
   }

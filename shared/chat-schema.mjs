@@ -1,0 +1,3 @@
+/** Exact JSON contract shared by the authenticated chat and the full diagnostic probe. */
+export const ALLOWED_SUGGESTION_PATHS=Object.freeze(['plan.monthly','plan.months','plan.startMonth','plan.reserve','plan.negotiatedInterest','consignado.paidAfterSnapshot','payroll.actualCashAfterLoan']);
+export const CHAT_REPLY_SCHEMA={type:'object',additionalProperties:false,properties:{answer:{type:'string'},suggestions:{type:'array',items:{type:'object',additionalProperties:false,properties:{path:{type:'string',enum:[...ALLOWED_SUGGESTION_PATHS]},value:{type:['string','number']},reason:{type:'string'}},required:['path','value','reason']}},featureRequest:{type:'string'}},required:['answer','suggestions','featureRequest']};

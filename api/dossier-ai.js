@@ -40,5 +40,5 @@ export default async function handler(req,res){res.setHeader('Cache-Control','no
  const short=`Análise documental ${focus}: ${reportData.summary}`.slice(0,11500);
  const persisted=await client.from('chat_messages').insert([{case_id:caseId,owner_id:auth.data.user.id,role:'user',content:`[Análise documental] ${focus}; ${notes||'revisão geral'}`.slice(0,2200)},{case_id:caseId,owner_id:auth.data.user.id,role:'assistant',content:short}]);
  res.status(200).json({report:reportData,triage,participantAudit:people,creditorDisclosure,sources:sources.map(({excerpt,...s})=>s),knowledgeReferences:privateKnowledge.map(x=>({id:x.id,date:x.date,title:x.title,sourceId:x.sourceId,sourcePage:x.sourcePage,status:x.status})),savedToHistory:!persisted.error,caseVersion:record.version,generatedAt:new Date().toISOString(),provider,aiModel});
- }catch(error){return reply(res,error.status||502,(error.message||'Falha da IA.')+' A proposta não foi modificada.');}
+ }catch(error){console.error('PlanoJusto dossier AI:',JSON.stringify({provider:error.provider||'unknown',status:error.upstreamStatus||null,code:error.upstreamCode||null,type:error.upstreamType||null,model:error.model||null}));return res.status(error.status||502).json({error:(error.message||'Falha da IA.')+' A proposta não foi modificada.',upstreamCode:error.upstreamCode||null,model:error.model||null});}
 }

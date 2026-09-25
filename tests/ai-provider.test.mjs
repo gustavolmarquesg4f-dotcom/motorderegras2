@@ -38,9 +38,9 @@ test('Groq retorna resposta real com modelo 120b e sem processar outro provedor'
   assert.equal(calls[0].opts.headers.Authorization,'Bearer fake-test-key');
  }finally{globalThis.fetch=prior}
 });
-test('403 do modelo 120b tenta apenas 20b na mesma Groq',async()=>{
+test('403 com código explícito de bloqueio do modelo 120b tenta 20b na mesma Groq',async()=>{
  const prior=globalThis.fetch;let calls=[];
- globalThis.fetch=async (_url,opts)=>{const model=JSON.parse(opts.body).model;calls.push(model);return model.endsWith('120b')?{ok:false,status:403,json:async()=>({error:{message:'model forbidden'}})}:{ok:true,status:200,json:async()=>({choices:[{message:{content:'{"ok":true,"message":"ok"}'}}]})}};
+ globalThis.fetch=async (_url,opts)=>{const model=JSON.parse(opts.body).model;calls.push(model);return model.endsWith('120b')?{ok:false,status:403,json:async()=>({error:{code:'model_permission_blocked_project',type:'permissions_error',message:'model forbidden'}})}:{ok:true,status:200,json:async()=>({choices:[{message:{content:'{"ok":true,"message":"ok"}'}}]})}};
  try{
   const got=await completeStructured({instructions:'test',messages:[],schema,env:{GROQ_API_KEY:'fake',AI_PROVIDER:'groq'}});
   assert.equal(got.model,'openai/gpt-oss-20b');assert.deepEqual(calls,['openai/gpt-oss-120b','openai/gpt-oss-20b']);
@@ -53,4 +53,26 @@ test('401 da Groq não tenta segundo modelo ou outra empresa',async()=>{
   await assert.rejects(completeStructured({instructions:'test',messages:[],schema,env:{GROQ_API_KEY:'fake',OPENAI_API_KEY:'other',AI_PROVIDER:'auto'}}),e=>e.provider==='groq'&&e.upstreamStatus===401);
   assert.equal(count,1);
  }finally{globalThis.fetch=prior}
+});
+
+
+test('403 genérico no chat preserva modelo/código e não troca para 20b silenciosamente',async()=>{
+ const prior=globalThis.fetch;const calls=[];
+ globalThis.fetch=async(_url,opts)=>{calls.push(JSON.parse(opts.body).model);return {ok:false,status:403,json:async()=>({error:{type:'permission_error',code:'request_blocked',message:'DO NOT EXPOSE PRIVATE PROMPT'}})}};
+ try{
+  await assert.rejects(completeStructured({instructions:'dados fictícios',messages:[],schema,env:{GROQ_API_KEY:'fake',AI_PROVIDER:'groq'}}),e=>e instanceof AIServiceError&&e.upstreamStatus===403&&e.upstreamCode==='request_blocked'&&e.model==='openai/gpt-oss-120b'&&!e.message.includes('PRIVATE PROMPT'));
+  assert.deepEqual(calls,['openai/gpt-oss-120b']);
+ }finally{globalThis.fetch=prior}
+});
+test('Groq não expõe mensagens upstream nem aceita código de erro arbitrário',async()=>{
+ const prior=globalThis.fetch;
+ globalThis.fetch=async()=>({ok:false,status:403,json:async()=>({error:{code:'private user 1234',type:'x'.repeat(90),message:'CPF XXXXX e segredo'}})});
+ try{
+  await assert.rejects(completeStructured({instructions:'teste',messages:[],schema,env:{GROQ_API_KEY:'fake',AI_PROVIDER:'groq'}}),e=>e.upstreamCode===null&&e.upstreamType===null&&!e.message.includes('CPF'));
+ }finally{globalThis.fetch=prior}
+});
+test('schema do chat compartilhado com teste de conexão completo',async()=>{
+ const {CHAT_REPLY_SCHEMA,ALLOWED_SUGGESTION_PATHS}=await import('../shared/chat-schema.mjs');
+ assert.deepEqual(CHAT_REPLY_SCHEMA.required,['answer','suggestions','featureRequest']);
+ assert.ok(ALLOWED_SUGGESTION_PATHS.includes('plan.monthly'));
 });
