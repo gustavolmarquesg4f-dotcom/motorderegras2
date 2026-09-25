@@ -8,7 +8,6 @@ const err=(message,provider,upstreamStatus)=>new AIServiceError(message,{provide
 const clean=raw=>{const x=String(raw||'').trim();if(x.startsWith('```'))return x.replace(/^```(?:json)?\s*/i,'').replace(/```\s*$/,'').trim();return x};
 export function configuredProviders(env=process.env,requestHeaders={}) {
   const providers=[];
-  if(env.XAI_API_KEY)providers.push('xai');
   if(env.OLLAMA_BASE_URL)providers.push('ollama');
   if(env.OPENAI_API_KEY)providers.push('openai');
   // Vercel OIDC only means a token exists, not that the project has AI credits.
@@ -16,7 +15,7 @@ export function configuredProviders(env=process.env,requestHeaders={}) {
   if(env.AI_GATEWAY_API_KEY||String(env.AI_PROVIDER||'').toLowerCase()==='gateway'&&(requestHeaders['x-vercel-oidc-token']||env.VERCEL_OIDC_TOKEN))providers.push('gateway');
   const selected=String(env.AI_PROVIDER||'auto').trim().toLowerCase();
   if(selected==='auto')return providers;
-  if(!['xai','ollama','openai','gateway'].includes(selected))return [];
+  if(!['ollama','openai','gateway'].includes(selected))return [];
   return providers.filter(provider=>provider===selected);
 }
 export function validateOllamaConfig(env=process.env){
@@ -35,7 +34,7 @@ async function jsonResponse(url,opts,provider,timeoutMs=48000){
   catch(e){throw err(e?.name==='TimeoutError'?'O modelo excedeu o tempo de resposta.':'Não foi possível alcançar o provedor configurado.',provider)}
   let body;try{body=await response.json()}catch{throw err('Resposta inválida do provedor de IA.',provider,response.status)}
   if(!response.ok){
-    const message=response.status===403&&provider==='gateway'?'Gateway Vercel recusou acesso (403): créditos ou permissões. Configure outro provedor de IA no servidor.':response.status===403&&provider==='xai'?'xAI recusou acesso (403): confira permissão da chave, modelo e equipe na xAI Console.':response.status===401?'Credencial do provedor inválida.':response.status===429?'Limite ou crédito de uso do provedor atingido.':`Provedor ${provider} indisponível (HTTP ${response.status}).`;
+    const message=response.status===403&&provider==='gateway'?'Gateway Vercel recusou acesso (403): créditos ou permissões. Configure outro provedor de IA no servidor.':response.status===401?'Credencial do provedor inválida.':response.status===429?'Limite ou crédito de uso do provedor atingido.':`Provedor ${provider} indisponível (HTTP ${response.status}).`;
     throw err(message,provider,response.status);
   }
   return body;
@@ -50,11 +49,7 @@ export async function completeStructured({instructions,messages,schema,env=proce
  for(const provider of attempts){
   try{
    let raw;
-   if(provider==='xai'){
-    const model=env.XAI_MODEL||'grok-4.7';
-    const body=await jsonResponse('https://api.x.ai/v1/chat/completions',{method:'POST',headers:{Authorization:`Bearer ${env.XAI_API_KEY}`,'Content-Type':'application/json'},body:JSON.stringify({model,messages:content,stream:false,response_format:{type:'json_schema',json_schema:{name:'plano_justo',strict:true,schema}},max_completion_tokens:6500})},'xai',48000);
-    raw=body.choices?.[0]?.message?.content;
-   }else if(provider==='ollama'){
+   if(provider==='ollama'){
     const base=validateOllamaConfig(env);
     const body=await jsonResponse(base+'/api/chat',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${env.OLLAMA_API_KEY||''}`},body:JSON.stringify({model:env.OLLAMA_MODEL||'gpt-oss:20b',messages:content,stream:false,format:schema,think:env.OLLAMA_REASONING||'high',options:{temperature:0.2,num_ctx:32768}})},'ollama',48000);
     raw=body.message?.content;
