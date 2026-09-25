@@ -34,6 +34,7 @@ jobs:
           echo "v13 importer and glossary found in JS bundle"
           echo "Checking backend..."
           curl --retry 2 --retry-delay 2 --max-time 30 -L -fsS "$BASE/api/health" -o health.json
+          cat health.json
           node -e "const x=require('./health.json');if(x.name!=='Plano Justo API'||x.version!=='13.0.0'||!x.configured)throw Error('Database config missing'); console.log({version:x.version,configured:x.configured,aiConfigured:x.aiConfigured,aiProvider:x.aiProvider})"
           echo "Checking public frontend config..."
           curl --retry 2 --retry-delay 2 --max-time 30 -L -fsS "$BASE/api/config" -o config.json
